@@ -2,7 +2,7 @@
 8시간 단위로 데이터를 묶어 정상 환자와 발병 환자를 나누어 저장하는 테이블.
 
 public.sofa_8
-	stay_id 와 hr 를 기준으로 0시간씩 묶어서 feature의 값을 avg로 나타낸 테이블
+	stay_id 와 hr 를 기준으로 8시간씩 묶어서 feature의 값을 avg로 나타낸 테이블
 
 public.realage
 	icu.icustays 테이블을 기준으로 나이 계산
