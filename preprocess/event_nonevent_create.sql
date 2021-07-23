@@ -1,3 +1,23 @@
+/*
+8시간 단위로 데이터를 묶어 정상 환자와 발병 환자를 나누어 저장하는 테이블.
+
+public.sofa_8
+	stay_id 와 hr 를 기준으로 0시간씩 묶어서 feature의 값을 avg로 나타낸 테이블
+
+public.realage
+	icu.icustays 테이블을 기준으로 나이 계산
+
+public.event_table
+	발병 환자 테이블
+	infection_time: 감염 시각
+	is_infection: 감염되었는지 여부 -- 감염 시각이 starttime과 endtime 사이에 있는 경우에만 기입. 아닌 경우 null
+	infection_hour: (심박수 최초 기록 시각 기준) 감염된 시간 -- 감염 시각이 starttime과 endtime 사이에 있는 경우에만 기입. 아닌 경우 null
+
+public.nonevent_table
+	정상 환자 테이블
+	데이터가 32시간 미만으로 기록된 경우 삭제
+*/
+
 -- 8시간 단위로 나누기 
 create temp table sofa_hr as
 select *, (hr/8-0.45)::int as compiled_hr from sepsis.sofa s ;
