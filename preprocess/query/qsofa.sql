@@ -1,3 +1,8 @@
+/*
+qSOFA 기준에 맞추어서 테이블 생성
+*/
+
+-- 1. new_sofa(1시간 단위로 나누어진 데이터)에서 qSOFA 진단기준에서 사용하는 데이터(sbp, gcs_min) 합쳐서 사용
 create temp table qsofa_temp as
 select n.stay_id, hr, starttime, endtime, 
 avg(v.sbp) as sbp, 
@@ -6,8 +11,8 @@ from public.new_sofa n
 left join sepsis.vitalsign v 
 on v.charttime > n.starttime and v.charttime <= n.endtime and n.stay_id = v.stay_id
 group by n.stay_id, hr, starttime, endtime;
- 
 
+-- 2. new_sofa(1시간 단위로 나누어진 데이터)에서 qSOFA 진단기준에서 사용하는 데이터(respiratory_rate) 합쳐서 사용
 create temp table qsofa as
 select qt.stay_id, hr, starttime, endtime, avg(qt.sbp) as sbp, 
 min(gcs_min) as gcs_min, avg(c.valuenum) as respiratory_rate
@@ -17,31 +22,24 @@ on c.itemid in (220210, 224422, 224689, 224690) and c.stay_id = qt.stay_id and
 c.charttime > qt.starttime and c.charttime <= qt.endtime 
 group by qt.stay_id, hr, starttime, endtime;
 
-create temp table qsofa_nan as
-select *,
-coalesce(sbp, avg(sbp) over(partition by stay_id order by hr rows between 3 PRECEDING AND CURRENT ROW)) as sbp_na,
-coalesce(gcs_min, min(gcs_min) over(partition by stay_id order by hr rows between 3 PRECEDING AND CURRENT ROW)) as gcs_na,
-coalesce(respiratory_rate, avg(respiratory_rate) over(partition by stay_id order by hr rows between 3 PRECEDING AND CURRENT row)) as rr_na
-from qsofa q
+-- create temp table qsofa_nan as
+-- select *,
+-- coalesce(sbp, avg(sbp) over(partition by stay_id order by hr rows between 3 PRECEDING AND CURRENT ROW)) as sbp_na,
+-- coalesce(gcs_min, min(gcs_min) over(partition by stay_id order by hr rows between 3 PRECEDING AND CURRENT ROW)) as gcs_na,
+-- coalesce(respiratory_rate, avg(respiratory_rate) over(partition by stay_id order by hr rows between 3 PRECEDING AND CURRENT row)) as rr_na
+-- from qsofa q
 
-drop table qsofa_score
-
-create temp table qsofa_score as
-select *,
-(sbp <= 100)::int as sbp_score, 
-(gcs_min <= 14)::int as gcs_score, 
-(respiratory_rate >= 22)::int as rr_score
-from qsofa
-
-select *, (sbp_score+gcs_score+rr_score) as qsofa_score, ((sbp_score+gcs_score+rr_score) >= 2)::int as is_qsofa
-from qsofa_score
+-- create temp table qsofa_score as
+-- select *,
+-- (sbp <= 100)::int as sbp_score, 
+-- (gcs_min <= 14)::int as gcs_score, 
+-- (respiratory_rate >= 22)::int as rr_score
+-- from qsofa
 
 create table public.qsofa as
 select * from qsofa
 
-select count(distinct stay_id)
-from public.qsofa q
-
+-- 3. icd code 
 create temp table chartevent as
 select subject_id, hadm_id, stay_id, charttime, 
 avg(case when itemid = 220052 then valuenum end) as abp_mean,
@@ -85,5 +83,3 @@ create table public.qsofa_icdcode as
 select distinct qf.*, (case when di.icd_code is null then 0 else 1 end) as icd_event from public.qsofa_features qf
 left join hosp.diagnoses_icd di 
 on qf.subject_id = di.subject_id and qf.hadm_id = di.hadm_id and di.icd_code in  ('99592', 'R652', 'R6520', 'R6521')
-
-select count(distinct stay_id) from public.qsofa_icdcode where icd_event = 1
