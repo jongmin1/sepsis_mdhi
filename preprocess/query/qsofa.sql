@@ -1,5 +1,14 @@
 /*
 qSOFA 기준에 맞추어서 테이블 생성
+
+public.qsofa
+	qSOFA 기준에서 필요로하는 데이터만 모은 테이블
+
+public.qsofa_features
+	public.qsofa 테이블에서 추가할 feature를 추가한 테이블
+
+public.qsofa_icdcode
+	public.qsofa_features에서 icd 진단코드를 확인한 후 패혈증 진단을 받았는지 아닌지에 대한 정보가 추가된 테이블
 */
 
 -- 1. new_sofa(1시간 단위로 나누어진 데이터)에서 qSOFA 진단기준에서 사용하는 데이터(sbp, gcs_min) 합쳐서 사용
